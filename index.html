@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تقويم - محول التاريخ</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="tabs" role="tablist" aria-label="نمط التحويل">
+        <button class="tab active" id="tab-g" role="tab" aria-selected="true" data-mode="gregorian">
+          ميلادي
+        </button>
+        <button class="tab" id="tab-h" role="tab" aria-selected="false" data-mode="hijri">
+          هجري
+        </button>
+      </section>
+
+      <section class="picker-card">
+        <div class="picker-grid">
+          <div class="field">
+            <label for="daySelect">اليوم</label>
+            <div id="dayWheel" class="wheel" data-field="day" aria-hidden="true"></div>
+            <select id="daySelect" class="sr-only"></select>
+          </div>
+          <div class="field">
+            <label for="monthSelect">الشهر</label>
+            <div id="monthWheel" class="wheel" data-field="month" aria-hidden="true"></div>
+            <select id="monthSelect" class="sr-only"></select>
+          </div>
+          <div class="field">
+            <label for="yearSelect">السنة</label>
+            <div id="yearWheel" class="wheel" data-field="year" aria-hidden="true"></div>
+            <select id="yearSelect" class="sr-only"></select>
+          </div>
+        </div>
+      </section>
+
+      <section class="result-card">
+        <div class="result-header">
+          <div class="badge">🕋</div>
+          <div class="header-actions">
+            <button id="todayBtn" class="today-btn" type="button">تحديث اليوم</button>
+            <button id="editBtn" class="edit-btn">تعديل</button>
+          </div>
+        </div>
+        <h2 id="weekdayText">-</h2>
+        <p id="fullDateText" class="big-date">-</p>
+        <p id="monthNameText" class="month-name">-</p>
+        <p id="offsetText" class="offset-text">0 يوم</p>
+      </section>
+
+      <footer class="owner-signature" aria-label="المالك">
+        <span class="owner-label">المالك</span>
+        <span class="owner-name">عبدالمحسن</span>
+      </footer>
+    </main>
+
+    <dialog id="editDialog">
+      <form method="dialog" class="dialog-content">
+        <h3>تعديل التاريخ</h3>
+
+        <label class="dialog-label" for="offsetInput">إضافة / إنقاص أيام</label>
+        <input id="offsetInput" type="number" value="0" min="-5000" max="5000" />
+
+        <p class="dialog-label">طول الشهر الهجري</p>
+        <div class="radio-row">
+          <label><input type="radio" name="monthLength" value="30" checked /> 30 يوم</label>
+          <label><input type="radio" name="monthLength" value="29" /> 29 يوم</label>
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" id="cancelDialogBtn" class="ghost-btn">إلغاء</button>
+          <button type="submit" id="saveDialogBtn" class="solid-btn">حفظ</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
