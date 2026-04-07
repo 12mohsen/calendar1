@@ -8,6 +8,10 @@
   </head>
   <body>
     <main class="app-shell">
+      <div class="lang-bar">
+        <button id="langToggleBtn" class="lang-toggle-btn" type="button">EN</button>
+      </div>
+
       <section class="tabs" role="tablist" aria-label="نمط التحويل">
         <button class="tab active" id="tab-g" role="tab" aria-selected="true" data-mode="gregorian">
           ميلادي
@@ -20,17 +24,17 @@
       <section class="picker-card">
         <div class="picker-grid">
           <div class="field">
-            <label for="daySelect">اليوم</label>
+            <label id="labelDay" for="daySelect">اليوم</label>
             <div id="dayWheel" class="wheel" data-field="day" aria-hidden="true"></div>
             <select id="daySelect" class="sr-only"></select>
           </div>
           <div class="field">
-            <label for="monthSelect">الشهر</label>
+            <label id="labelMonth" for="monthSelect">الشهر</label>
             <div id="monthWheel" class="wheel" data-field="month" aria-hidden="true"></div>
             <select id="monthSelect" class="sr-only"></select>
           </div>
           <div class="field">
-            <label for="yearSelect">السنة</label>
+            <label id="labelYear" for="yearSelect">السنة</label>
             <div id="yearWheel" class="wheel" data-field="year" aria-hidden="true"></div>
             <select id="yearSelect" class="sr-only"></select>
           </div>
@@ -49,6 +53,13 @@
         <p id="fullDateText" class="big-date">-</p>
         <p id="monthNameText" class="month-name">-</p>
         <p id="offsetText" class="offset-text">0 يوم</p>
+        <div class="clock-section">
+          <div class="clock-display">
+            <span id="clockTime" class="clock-time">--:--:--</span>
+            <span id="clockAmPm" class="clock-ampm"></span>
+          </div>
+          <button id="clockToggleBtn" class="clock-toggle-btn" type="button">١٢ ساعة</button>
+        </div>
       </section>
 
       <footer class="owner-signature" aria-label="المالك">
@@ -59,15 +70,15 @@
 
     <dialog id="editDialog">
       <form method="dialog" class="dialog-content">
-        <h3>تعديل التاريخ</h3>
+        <h3 id="dialogTitle">تعديل التاريخ</h3>
 
-        <label class="dialog-label" for="offsetInput">إضافة / إنقاص أيام</label>
+        <label id="dialogOffsetLabel" class="dialog-label" for="offsetInput">إضافة / إنقاص أيام</label>
         <input id="offsetInput" type="number" value="0" min="-5000" max="5000" />
 
-        <p class="dialog-label">طول الشهر الهجري</p>
+        <p id="dialogMonthLengthLabel" class="dialog-label">طول الشهر الهجري</p>
         <div class="radio-row">
-          <label><input type="radio" name="monthLength" value="30" checked /> 30 يوم</label>
-          <label><input type="radio" name="monthLength" value="29" /> 29 يوم</label>
+          <label id="monthLen30Label"><input type="radio" name="monthLength" value="30" checked /> <span>30 يوم</span></label>
+          <label id="monthLen29Label"><input type="radio" name="monthLength" value="29" /> <span>29 يوم</span></label>
         </div>
 
         <div class="dialog-actions">

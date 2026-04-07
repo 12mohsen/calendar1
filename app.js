@@ -28,6 +28,70 @@ const gregorianMonthNames = [
   "ديسمبر",
 ];
 
+const hijriMonthNamesEn = [
+  "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani",
+  "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban",
+  "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah",
+];
+
+const gregorianMonthNamesEn = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const i18n = {
+  ar: {
+    tabGregorian: "ميلادي",
+    tabHijri: "هجري",
+    labelDay: "اليوم",
+    labelMonth: "الشهر",
+    labelYear: "السنة",
+    todayBtn: "تحديث اليوم",
+    editBtn: "تعديل",
+    offsetToday: "اليوم",
+    offsetElapsed: "مضى",
+    offsetRemaining: "متبقي",
+    dialogTitle: "تعديل التاريخ",
+    dialogOffsetLabel: "إضافة / إنقاص أيام",
+    dialogMonthLengthLabel: "طول الشهر الهجري",
+    monthLen30: "30 يوم",
+    monthLen29: "29 يوم",
+    cancelBtn: "إلغاء",
+    saveBtn: "حفظ",
+    ownerLabel: "المالك",
+    langToggle: "EN",
+    clockToggle12: "١٢ ساعة",
+    clockToggle24: "٢٤ ساعة",
+    amText: "ص",
+    pmText: "م",
+  },
+  en: {
+    tabGregorian: "Gregorian",
+    tabHijri: "Hijri",
+    labelDay: "Day",
+    labelMonth: "Month",
+    labelYear: "Year",
+    todayBtn: "Today",
+    editBtn: "Edit",
+    offsetToday: "Today",
+    offsetElapsed: "Elapsed",
+    offsetRemaining: "Remaining",
+    dialogTitle: "Edit Date",
+    dialogOffsetLabel: "Add / Subtract Days",
+    dialogMonthLengthLabel: "Hijri Month Length",
+    monthLen30: "30 days",
+    monthLen29: "29 days",
+    cancelBtn: "Cancel",
+    saveBtn: "Save",
+    ownerLabel: "Owner",
+    langToggle: "عربي",
+    clockToggle12: "12h",
+    clockToggle24: "24h",
+    amText: "AM",
+    pmText: "PM",
+  },
+};
+
 const state = {
   mode: "hijri",
   selectedGregorianDate: new Date(),
@@ -37,6 +101,8 @@ const state = {
     hijri: 0,
   },
   hijriMonthLength: 30,
+  clockMode: "24",
+  lang: "ar",
 };
 
 const daySelect = document.getElementById("daySelect");
@@ -55,6 +121,10 @@ const editDialog = document.getElementById("editDialog");
 const offsetInput = document.getElementById("offsetInput");
 const cancelDialogBtn = document.getElementById("cancelDialogBtn");
 const tabButtons = Array.from(document.querySelectorAll(".tab"));
+const clockTimeEl = document.getElementById("clockTime");
+const clockAmPmEl = document.getElementById("clockAmPm");
+const clockToggleBtn = document.getElementById("clockToggleBtn");
+const langToggleBtn = document.getElementById("langToggleBtn");
 
 const arabicWeekday = new Intl.DateTimeFormat("ar", { weekday: "long" });
 const wheelTimers = new WeakMap();
@@ -62,7 +132,8 @@ const wheelScrollRaf = new WeakMap();
 const STORAGE_KEY = "calendar_app_state_v1";
 
 function toArabicDigits(value) {
-  return new Intl.NumberFormat("ar").format(value);
+  if (state.lang === "en") return String(value);
+  return new Intl.NumberFormat("ar", { useGrouping: false }).format(value);
 }
 
 function saveAppState() {
@@ -72,6 +143,8 @@ function saveAppState() {
     selectedHijriDate: state.selectedHijriDate.toISOString(),
     dayOffsetByMode: state.dayOffsetByMode,
     hijriMonthLength: state.hijriMonthLength,
+    clockMode: state.clockMode,
+    lang: state.lang,
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -86,16 +159,6 @@ function loadAppState() {
       state.mode = parsed.mode;
     }
 
-    const gregDate = new Date(parsed.selectedGregorianDate);
-    if (!Number.isNaN(gregDate.getTime())) {
-      state.selectedGregorianDate = gregDate;
-    }
-
-    const hijriDate = new Date(parsed.selectedHijriDate);
-    if (!Number.isNaN(hijriDate.getTime())) {
-      state.selectedHijriDate = hijriDate;
-    }
-
     if (parsed.dayOffsetByMode && typeof parsed.dayOffsetByMode === "object") {
       if (Number.isFinite(parsed.dayOffsetByMode.gregorian)) {
         state.dayOffsetByMode.gregorian = Number(parsed.dayOffsetByMode.gregorian);
@@ -107,6 +170,14 @@ function loadAppState() {
 
     if (parsed.hijriMonthLength === 29 || parsed.hijriMonthLength === 30) {
       state.hijriMonthLength = parsed.hijriMonthLength;
+    }
+
+    if (parsed.clockMode === "12" || parsed.clockMode === "24") {
+      state.clockMode = parsed.clockMode;
+    }
+
+    if (parsed.lang === "ar" || parsed.lang === "en") {
+      state.lang = parsed.lang;
     }
   } catch {
     // Ignore corrupted storage and keep defaults.
@@ -164,6 +235,13 @@ function formatDifferenceAsMonthsAndDays(totalDays) {
   const years = Math.floor(totalMonths / 12);
   const months = totalMonths % 12;
   const parts = [];
+
+  if (state.lang === "en") {
+    if (years > 0) parts.push(`${years} ${years === 1 ? "year" : "years"}`);
+    if (months > 0) parts.push(`${months} ${months === 1 ? "month" : "months"}`);
+    if (days > 0 || (years === 0 && months === 0)) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
+    return parts.join(", ");
+  }
 
   if (years > 0) {
     if (years === 2) {
@@ -392,7 +470,7 @@ function setupWheelEvents(wheelEl, selectEl) {
     const newTimer = window.setTimeout(() => {
       setSelectedOptionFromWheel(wheelEl, selectEl, true);
       wheelTimers.delete(wheelEl);
-    }, 180);
+    }, 90);
     wheelTimers.set(wheelEl, newTimer);
   });
 }
@@ -413,11 +491,14 @@ function refillDayOptions() {
 
 function fillMonthOptions() {
   monthSelect.innerHTML = "";
-  const names = state.mode === "gregorian" ? gregorianMonthNames : hijriMonthNames;
+  const isEn = state.lang === "en";
+  const names = state.mode === "gregorian"
+    ? (isEn ? gregorianMonthNamesEn : gregorianMonthNames)
+    : (isEn ? hijriMonthNamesEn : hijriMonthNames);
   names.forEach((name, idx) => {
     const option = document.createElement("option");
     option.value = String(idx + 1);
-    if (state.mode === "gregorian") {
+    if (state.mode === "gregorian" && !isEn) {
       option.textContent = `${name} ${toArabicDigits(idx + 1)}`;
     } else {
       option.textContent = name;
@@ -491,7 +572,6 @@ function renderResult() {
   const picked = getDateFromSelectors();
   const adjusted = adjustDateWithOffset(picked, state.mode);
   const hijri = getHijriParts(adjusted);
-  const weekday = arabicWeekday.format(adjusted);
   const today = new Date();
   const dateDiffInDays = calculateDateDifferenceInDays(adjusted, today);
 
@@ -501,23 +581,26 @@ function renderResult() {
     state.selectedHijriDate = picked;
   }
 
-  weekdayText.textContent = weekday;
+  const t = i18n[state.lang];
+  const isEn = state.lang === "en";
+  const weekdayFmt = new Intl.DateTimeFormat(isEn ? "en" : "ar", { weekday: "long" });
+  weekdayText.textContent = weekdayFmt.format(adjusted);
   if (state.mode === "hijri") {
     fullDateText.textContent = `${toArabicDigits(adjusted.getFullYear())}/${toArabicDigits(
       adjusted.getMonth() + 1,
     )}/${toArabicDigits(adjusted.getDate())}`;
-    monthNameText.textContent = gregorianMonthNames[adjusted.getMonth()] || "-";
+    monthNameText.textContent = (isEn ? gregorianMonthNamesEn : gregorianMonthNames)[adjusted.getMonth()] || "-";
   } else {
     fullDateText.textContent = `${toArabicDigits(hijri.year)}/${toArabicDigits(hijri.month)}/${toArabicDigits(hijri.day)}`;
-    monthNameText.textContent = hijriMonthNames[hijri.month - 1] || "-";
+    monthNameText.textContent = (isEn ? hijriMonthNamesEn : hijriMonthNames)[hijri.month - 1] || "-";
   }
   const diffText = formatDifferenceAsMonthsAndDays(dateDiffInDays);
   if (dateDiffInDays < 0) {
-    offsetText.textContent = `مضى ${diffText}`;
+    offsetText.textContent = `${t.offsetElapsed} ${diffText}`;
   } else if (dateDiffInDays > 0) {
-    offsetText.textContent = `متبقي ${diffText}`;
+    offsetText.textContent = `${t.offsetRemaining} ${diffText}`;
   } else {
-    offsetText.textContent = "اليوم";
+    offsetText.textContent = t.offsetToday;
   }
 }
 
@@ -606,5 +689,85 @@ editDialog.querySelector("form").addEventListener("submit", (event) => {
   editDialog.close();
 });
 
+function padArabic(n) {
+  if (state.lang === "en") return String(n).padStart(2, "0");
+  const s = toArabicDigits(n);
+  return n < 10 ? toArabicDigits(0) + s : s;
+}
+
+function updateClockToggleLabel() {
+  const t = i18n[state.lang];
+  clockToggleBtn.textContent = state.clockMode === "24" ? t.clockToggle12 : t.clockToggle24;
+}
+
+function tickClock() {
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+
+  if (state.clockMode === "12") {
+    const t = i18n[state.lang];
+    const ampm = hours >= 12 ? t.pmText : t.amText;
+    hours = hours % 12 || 12;
+    clockAmPmEl.textContent = ampm;
+    clockAmPmEl.style.display = "";
+  } else {
+    clockAmPmEl.textContent = "";
+    clockAmPmEl.style.display = "none";
+  }
+
+  clockTimeEl.textContent = `${padArabic(hours)}:${padArabic(minutes)}:${padArabic(seconds)}`;
+}
+
+function startClock() {
+  tickClock();
+  setInterval(tickClock, 1000);
+}
+
+clockToggleBtn.addEventListener("click", () => {
+  state.clockMode = state.clockMode === "24" ? "12" : "24";
+  updateClockToggleLabel();
+  saveAppState();
+  tickClock();
+});
+
+function applyLanguage() {
+  const t = i18n[state.lang];
+  const isAr = state.lang === "ar";
+  document.documentElement.lang = state.lang;
+  document.documentElement.dir = isAr ? "rtl" : "ltr";
+  document.getElementById("tab-g").textContent = t.tabGregorian;
+  document.getElementById("tab-h").textContent = t.tabHijri;
+  document.getElementById("labelDay").textContent = t.labelDay;
+  document.getElementById("labelMonth").textContent = t.labelMonth;
+  document.getElementById("labelYear").textContent = t.labelYear;
+  todayBtn.textContent = t.todayBtn;
+  editBtn.textContent = t.editBtn;
+  document.getElementById("dialogTitle").textContent = t.dialogTitle;
+  document.getElementById("dialogOffsetLabel").textContent = t.dialogOffsetLabel;
+  document.getElementById("dialogMonthLengthLabel").textContent = t.dialogMonthLengthLabel;
+  document.querySelector("#monthLen30Label span").textContent = t.monthLen30;
+  document.querySelector("#monthLen29Label span").textContent = t.monthLen29;
+  cancelDialogBtn.textContent = t.cancelBtn;
+  document.getElementById("saveDialogBtn").textContent = t.saveBtn;
+  document.querySelector(".owner-label").textContent = t.ownerLabel;
+  langToggleBtn.textContent = t.langToggle;
+  updateClockToggleLabel();
+}
+
+function switchLang(lang) {
+  state.lang = lang;
+  applyLanguage();
+  setupSelectors();
+  saveAppState();
+}
+
+langToggleBtn.addEventListener("click", () => {
+  switchLang(state.lang === "ar" ? "en" : "ar");
+});
+
 loadAppState();
+applyLanguage();
 switchMode(state.mode);
+startClock();
