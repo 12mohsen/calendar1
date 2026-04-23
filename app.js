@@ -125,6 +125,8 @@ const clockTimeEl = document.getElementById("clockTime");
 const clockAmPmEl = document.getElementById("clockAmPm");
 const clockToggleBtn = document.getElementById("clockToggleBtn");
 const langToggleBtn = document.getElementById("langToggleBtn");
+const calendarIconDay = document.getElementById("calendarIconDay");
+const calendarIconMonth = document.getElementById("calendarIconMonth");
 
 const arabicWeekday = new Intl.DateTimeFormat("ar", { weekday: "long" });
 const wheelTimers = new WeakMap();
@@ -754,6 +756,7 @@ function applyLanguage() {
   document.querySelector(".owner-label").textContent = t.ownerLabel;
   langToggleBtn.textContent = t.langToggle;
   updateClockToggleLabel();
+  if (typeof updateCalendarIcon === "function") updateCalendarIcon();
 }
 
 function switchLang(lang) {
@@ -767,7 +770,59 @@ langToggleBtn.addEventListener("click", () => {
   switchLang(state.lang === "ar" ? "en" : "ar");
 });
 
+function updateCalendarIcon() {
+  const today = new Date();
+  const day = today.getDate();
+  const isEn = state.lang === "en";
+  const monthShort = isEn
+    ? new Intl.DateTimeFormat("en", { month: "short" }).format(today).toUpperCase()
+    : gregorianMonthNames[today.getMonth()];
+  const dayText = isEn ? String(day) : new Intl.NumberFormat("ar", { useGrouping: false }).format(day);
+  if (calendarIconDay) calendarIconDay.textContent = dayText;
+  if (calendarIconMonth) calendarIconMonth.textContent = monthShort;
+  updateFavicon(day, monthShort, isEn);
+}
+
+function updateFavicon(day, monthShort, isEn) {
+  const dayFontSize = String(day).length > 1 ? 34 : 38;
+  const monthFontSize = monthShort.length > 6 ? 9 : 11;
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+    '<rect width="64" height="64" rx="10" ry="10" fill="#ffffff"/>' +
+    '<rect width="64" height="18" fill="#d83a3a"/>' +
+    '<text x="32" y="13" text-anchor="middle" fill="#ffffff" ' +
+    'font-family="Arial, sans-serif" font-size="' + monthFontSize + '" font-weight="700" ' +
+    (isEn ? 'letter-spacing="1.5"' : '') +
+    '>' + monthShort + '</text>' +
+    '<text x="32" y="52" text-anchor="middle" fill="#1a1a1a" ' +
+    'font-family="Arial, sans-serif" font-size="' + dayFontSize + '" font-weight="800">' +
+    day + '</text>' +
+    '</svg>';
+  const href = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+  let link = document.querySelector("link[rel='icon']");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+  link.type = "image/svg+xml";
+  link.href = href;
+}
+
+function scheduleMidnightUpdate() {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2);
+  const msUntil = next.getTime() - now.getTime();
+  window.setTimeout(() => {
+    updateCalendarIcon();
+    if (typeof setupSelectors === "function") setupSelectors();
+    scheduleMidnightUpdate();
+  }, msUntil);
+}
+
 loadAppState();
 applyLanguage();
 switchMode(state.mode);
 startClock();
+updateCalendarIcon();
+scheduleMidnightUpdate();

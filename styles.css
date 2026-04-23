@@ -205,14 +205,41 @@ body {
   gap: 8px;
 }
 
-.badge {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 2px solid #504529;
-  display: grid;
-  place-items: center;
-  background: #101010;
+.cal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(235, 209, 139, 0.25);
+  direction: ltr;
+  flex-shrink: 0;
+}
+
+.cal-icon-top {
+  background: #d83a3a;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  padding: 3px 0 2px;
+  letter-spacing: 1.2px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  line-height: 1.1;
+}
+
+.cal-icon-day {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a1a1a;
+  font-size: 24px;
+  font-weight: 800;
+  font-family: "Segoe UI", Arial, sans-serif;
+  line-height: 1;
 }
 
 .edit-btn {
